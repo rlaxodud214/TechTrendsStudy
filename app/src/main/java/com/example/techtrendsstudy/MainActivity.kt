@@ -31,31 +31,26 @@ class MainActivity : ComponentActivity() {
             TechTrendsStudyTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    /*
-                    modifier를 통해서 백그라운드 색상, 패딩, 마진, 크기 등을 조정할 수 있음
-                    public inline fun Column(
-                        modifier: Modifier,
-                        verticalArrangement: Arrangement.Vertical,
-                        horizontalAlignment: Alignment.Horizontal,
-                        content: @Composable() (ColumnScope.() -> Unit)
-                    ): Unit
-                    */
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(color = Color.Blue)
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.SpaceBetween,
-
-                        ) {
-                        Text("Hello")
-                        // 컴포넌트 간의 간격은 Spacer를 통해 조절할 수 있다.
-                        Spacer(Modifier.width(16.dp))
-                        Text("World")
-                    }
+                    Greeting("Android")
                 }
             }
         }
+    }
+}
+
+@Composable
+/* 1. Column, Row, Text | 2 - Composable, Preview
+   Composable 함수 이름은 대문자로 시작해야한다.
+*/
+fun Greeting(name: String) {
+    Text(text = "Hello $name!")
+}
+
+// Priview로 선언하면 Hot Relod가 가능하다.
+@Preview(showBackground = true)
+@Composable
+fun DefalutPreview() {
+    TechTrendsStudyTheme {
+        Greeting("김태영")
     }
 }
