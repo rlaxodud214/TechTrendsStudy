@@ -24,7 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -42,8 +44,8 @@ import kotlinx.coroutines.launch
 
 // JetPack Compose 및 MVVM 디자인 패턴 학습
 // Jetpack Compose 6 - Scaffold, TextField, Button, 구조분해, SnackBar, 코루틴 스코프
+@OptIn(ExperimentalComposeUiApi::class)
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +66,9 @@ class MainActivity : ComponentActivity() {
             val snackbarHostState = remember { SnackbarHostState() }
             val scope = rememberCoroutineScope()
 
+            // 키보드 제어(클릭시 키보드 내리기)
+            val keyboardController = LocalSoftwareKeyboardController.current
+
             // Scaffold에서 SnackBar를 사용할 수 있다.
             // https://developer.android.com/jetpack/compose/components/snackbar
             // Scaffold의 파라미터에서 scaffoldState가 제거됨 -> SnackbarHost 사용하기
@@ -82,6 +87,7 @@ class MainActivity : ComponentActivity() {
                     )
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = {
+                        keyboardController?.hide()
                         scope.launch {
                             // showSnackbar처럼 Suspend 키워드가 붙은 함수는 코루틴 스코프 내에서 호출되어야 한다.
                             snackbarHostState.showSnackbar(
