@@ -13,22 +13,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.currentCompositionLocalContext
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.modifier.modifierLocalMapOf
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 /*  명령어 학습
     1. CA + l : 자동 정렬
@@ -43,65 +42,102 @@ import kotlinx.coroutines.launch
 */
 
 // JetPack Compose 및 MVVM 디자인 패턴 학습
-// Jetpack Compose 6 - Scaffold, TextField, Button, 구조분해, SnackBar, 코루틴 스코프
+// Jetpack Compose 7 - Navigation
 @OptIn(ExperimentalComposeUiApi::class)
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            /* 코틀린 구조분해 기법
-            interface MutableState<T> : State<T> {
-                override var value: T
-                operator fun component1(): T
-                operator fun component2(): (T) -> Unit
-            }
-                (value, component1()) 형태로 객체의 프로퍼티에 따라 분해해서 가져왔기 때문에 .value가 필요없음
-            */
-            val (textValue, setValue) = rememberSaveable {
-                mutableStateOf("")
-            }
-
-            // val scaffoldState = rememberScaffoldState() // deprecated
-            val snackbarHostState = remember { SnackbarHostState() }
-            val scope = rememberCoroutineScope()
-
-            // 키보드 제어(클릭시 키보드 내리기)
-            val keyboardController = LocalSoftwareKeyboardController.current
-
-            // Scaffold에서 SnackBar를 사용할 수 있다.
-            // https://developer.android.com/jetpack/compose/components/snackbar
-            // Scaffold의 파라미터에서 scaffoldState가 제거됨 -> SnackbarHost 사용하기
-            Scaffold(
-                // scaffoldState = scaffoldState, // deprecated
-                snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            val navController = rememberNavController()
+            NavHost(
+                navController = navController,
+                startDestination = "first"
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TextField(
-                        value = textValue,
-                        onValueChange = setValue,
+                composable("first") {
+                    FirstScreen(navController = navController)
+                }
+                composable("second") {
+                    SecondScreen(navController = navController)
+                }
+                // backStackEntry를 통해서 value 값을 얻어올 수 있다.
+                composable("third/{value}") { backStackEntry ->
+                    ThirdScreen(
+                        navController = navController,
+                        value = backStackEntry.arguments?.getString("value") ?: "",
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Button(onClick = {
-                        keyboardController?.hide()
-                        scope.launch {
-                            // showSnackbar처럼 Suspend 키워드가 붙은 함수는 코루틴 스코프 내에서 호출되어야 한다.
-                            snackbarHostState.showSnackbar(
-                                message = "Snackbar - Hello. $textValue",
-                                actionLabel = "OK",
-                                // Indefinite : 명시적으로 해제하거나 "actionLabel"을 클릭할 때까지 스낵바를 무기한 표시
-                                duration = SnackbarDuration.Indefinite // Defaults to SnackbarDuration.Short
-                            )
-                        }
-                    }) {
-                        Text("클릭!!")
-                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun FirstScreen(navController: NavController) {
+    val (value, setValue) = remember {
+        mutableStateOf("")
+    }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("첫 화면")
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = {
+            navController.navigate("second")
+        }) {
+            Text("두 번째!")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        TextField(value = value, onValueChange = setValue)
+        Button(onClick = {
+            if (value.isNotEmpty()) {
+                // 화면 전환시 데이터 전달 방법!!
+                navController.navigate("third/$value")
+            }
+        }) {
+            Text("세 번째!")
+        }
+    }
+}
+
+@Composable
+fun SecondScreen(navController: NavController) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("두 번째 화면")
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = {
+            /* Q. 아래 코드 둘 다 같은 동작을 한다? -> https://developer.android.com/reference/androidx/navigation/NavController#navigateUp()
+            navController.navigateUp() : Up버튼 실행 -> 스택에 아무 화면도 남아있지 않을 때, 새로운 화면을 생성하는 이슈 있음(이 경우 앱 종료 안됨)
+            navController.popBackStack() : Back버튼 실행 -> 백스택 항목이 없으면 아무 작업도 수행하지 않음. 따라서 안정적인 popBackStack을 사용할 것
+            */
+            navController.navigateUp()
+        }) {
+            Text("뒤로 가기!")
+        }
+    }
+}
+
+@Composable
+fun ThirdScreen(navController: NavController, value: String) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("세 번째 화면")
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("$value")
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = {
+            navController.popBackStack()
+        }) {
+            Text("뒤로 가기!")
         }
     }
 }
