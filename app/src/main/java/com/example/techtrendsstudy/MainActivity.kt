@@ -1,33 +1,21 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.example.techtrendsstudy
 
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.currentCompositionLocalContext
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.modifier.modifierLocalMapOf
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
 
 /*  명령어 학습
     1. CA + l : 자동 정렬
@@ -42,102 +30,85 @@ import androidx.navigation.compose.rememberNavController
 */
 
 // JetPack Compose 및 MVVM 디자인 패턴 학습
-// Jetpack Compose 7 - Navigation
-@OptIn(ExperimentalComposeUiApi::class)
+// Jetpack Compose 8 - ViewModel
 class MainActivity : ComponentActivity() {
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    // private val viewModel by viewModels<MainViewModel>()
+    @SuppressLint("UnrememberedMutableState")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val navController = rememberNavController()
-            NavHost(
-                navController = navController,
-                startDestination = "first"
-            ) {
-                composable("first") {
-                    FirstScreen(navController = navController)
-                }
-                composable("second") {
-                    SecondScreen(navController = navController)
-                }
-                // backStackEntry를 통해서 value 값을 얻어올 수 있다.
-                composable("third/{value}") { backStackEntry ->
-                    ThirdScreen(
-                        navController = navController,
-                        value = backStackEntry.arguments?.getString("value") ?: "",
-                    )
+            // remember를 사용하면 외부 요인으로 인해 UI가 다시 그려질 때마다 상태를 잃지 않게 해준다.
+            // 또는 remember가 없는 상태에서 UI가 다시 그려지더라도 상태를 유지할 수 있게 ViewModel을 사용해도 된다.
+            // val data = remember { mutableStateOf("Hello") }
+            val viewModel by viewModels<MainViewModel>()
+
+            Column (
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ){
+                Text(
+                    viewModel.data.value,
+                    fontSize = 30.sp
+                )
+                Button(onClick = {
+                    viewModel.changeValue("World")
+                }) {
+                    Text("변경")
                 }
             }
         }
     }
 }
 
-@Composable
-fun FirstScreen(navController: NavController) {
-    val (value, setValue) = remember {
-        mutableStateOf("")
-    }
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("첫 화면")
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            navController.navigate("second")
-        }) {
-            Text("두 번째!")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        TextField(value = value, onValueChange = setValue)
-        Button(onClick = {
-            if (value.isNotEmpty()) {
-                // 화면 전환시 데이터 전달 방법!!
-                navController.navigate("third/$value")
-            }
-        }) {
-            Text("세 번째!")
-        }
-    }
-}
+/*
+    [GPT Q&A] ViewModel
+    1. 정의 : Android의 Architecture Components 중 하나로, UI 관련 데이터를 관리 하는데 사용
+    2. 사용 목적 : 액티비티나 프래그먼트가 다시 생성되더라도 UI 데이터를 보존하기 위함 -> 데이터의 일관성 유지
+    3. When - 언제 사용할까? or 사용하면 좋을까?
+       1) 데이터 캐싱 : 서버에서 데이터를 불러온 뒤 일정 시간 동안 임시로 저장하고 싶을 때 -> 화면 간의 데이터 전달이나 재요청을 최소화 할 수 있음
+       2) LiveData나 StateFlow와의 연동 : Compose의 collectAsState와 같은 메소드를 사용하여 쉽게 Composable과 연결할 수 있음,
+                                         UI와 데이터의 상태를 쉽게 연결하고 동기화할 수 있음
+       3) 데이터 처리 : 데이터를 읽어와서 UI에 필요한 형태로 처리하는 로직을 ViewModel 안에서 구현
+       4) 사이드 이펙트 관리 : 사용자 입력의 이벤트를 처리하고, 그 결과로 발생하는 사이드 이펙트(DB Update, 네트워크 요청)를 관리하는 데 적합함
+       5) UI 이벤트 처리 : Composable에서 발생하는 이벤트를 'ViewModel'로 전달해서 그에 따른 액션을 수행 또는 상태 변경
+       6) UI 로직과 업무? 로직을 분리하여 이후 코드의 유지보수와 테스트가 용이해진다.
 
-@Composable
-fun SecondScreen(navController: NavController) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("두 번째 화면")
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            /* Q. 아래 코드 둘 다 같은 동작을 한다? -> https://developer.android.com/reference/androidx/navigation/NavController#navigateUp()
-            navController.navigateUp() : Up버튼 실행 -> 스택에 아무 화면도 남아있지 않을 때, 새로운 화면을 생성하는 이슈 있음(이 경우 앱 종료 안됨)
-            navController.popBackStack() : Back버튼 실행 -> 백스택 항목이 없으면 아무 작업도 수행하지 않음. 따라서 안정적인 popBackStack을 사용할 것
-            */
-            navController.navigateUp()
-        }) {
-            Text("뒤로 가기!")
+    Tip 1. private로 접근 제어를 하는 것은 객체 지향 프로그래밍에서 중요한 개념 중 하나이다.
+           클래스의 내부 상태를 외부에서 수정하도록 허용하면, 예기치 않은 오류로 크래시가 발생할 수 있다.
+           이때 setter를 사용하면 데이터의 유효성 검사나 추가적인 로직 실행 등을 통해 데이터의 안정성을 보장할 수 있음
+    Tip 2. 데이터 변경 시 다른 메소드를 호출 해야할 때, 직접적인 접근을 허용하면 타이밍에 따라 오류가 발생할 수 있음
+    Tip 3. 내부 상태를 private로 유지하고 제어된 방식으로만 변경할 수 있도록 설계하는 것이 바람직하다!
+
+    ex)
+    @Composable
+    fun GreetingScreen(viewModel: GreetingViewModel = viewModel()) {
+        val greeting: String by viewModel.greeting.collectAsState()
+
+        Text(text = greeting)
+
+        Button(onClick = { viewModel.updateGreeting() }) {
+            Text("Update Greeting")
         }
     }
-}
 
-@Composable
-fun ThirdScreen(navController: NavController, value: String) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("세 번째 화면")
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("$value")
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            navController.popBackStack()
-        }) {
-            Text("뒤로 가기!")
+    class GreetingViewModel : ViewModel() {
+        private val _greeting = MutableStateFlow("Hello, Compose!")
+        val greeting: StateFlow<String> get() = _greeting
+
+        fun updateGreeting() {
+            _greeting.value = "Hello from ViewModel!"
         }
+    }
+*/
+
+// ViewModel 클래스를 상속받아 새로운 ViewModel 생성
+class MainViewModel : ViewModel() {
+    // 외부에서 직접적인 데이터 수정을 막기 위해 private으로 정의한 뒤,
+    private val _data = mutableStateOf("Hello")
+
+    val data: State<String> = _data // 읽기 전용으로만 공개 (getter)
+    fun changeValue(value : String) { // 수정할 수 있는 기능은 메소드로 제공 (setter)
+        _data.value = value
     }
 }
