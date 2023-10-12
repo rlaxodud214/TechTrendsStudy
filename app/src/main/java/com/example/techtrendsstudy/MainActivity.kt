@@ -53,6 +53,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun LikeCountScreen(viewModel: LikeCountViewModel) {
+    /* collectAsState() : ViewModel 내의 Flow를 Composable의 State로 수집합니다.
+       기능 : Flow의 최신 값을 기반으로 UI를 자동으로 업데이트
+       생명 주기 : Composable이 dispose 될 때, Flow의 수집도 자동으로 중지된다.
+    */
+
     val data: Int by viewModel.counter.collectAsState()
 
     Column (
@@ -88,13 +93,17 @@ class LikeCountViewModel : ViewModel() {
        Flow : Coroutine의 Flow를 사용하기 위함, 상태를 감시 가능한 스트림으로 관리하기 위함 - 주요 기능에 사용
     2. 동작 방식
        Of : 해당 상태를 참조하는 Composable 함수는 상태가 변경될 때마다 다시 실행
-       Flow : Hot Flow로, 상태가 변경될 때마다 해당 변경 사항을 구독하고 있는 모든 구독자에게 방출 => 옵저버 패턴!!
+       Flow : Hot Flow로, 상태가 변경될 때마다 해당 변경 사항을 구독하고 있는 모든 구독자에게 방출 => 옵저버 패턴(Cold Streams)
     3. 사용 장소
        Of : 주로 Composable 함수 내에서 상태를 정의하고 관리하는 데 사용
        Flow : ViewModel 또는 다른 데이터 관리 클래스에서 상태를 관리하고 여러 구성 요소에 상태의 변경을 방출하는 데 사용
     4. Thread Safety
        Of : thread-safe 보장은 안되지만, Compose에서는 주로 메인 쓰레드에서 사용되므로 오류 확률 낮음
        Flow : thread-safe 보장할 수 있음, 여러 쓰레드에서 동시에 접근하고 수정해도 안전하다.
+
+    서버로부터 데이터를 읽어오는 등 네트워크 요청의 결과나 DB 쿼리의 결과 들을 Flow로 처리한다.
+    MutableStateOf로 처리가 충분히 가능하다면 Flow를 쓸 필요가 없다.
+    상황에 따라 적절하게 선택해서 사용하는 것이 핵심!!
 */
 
 /*
