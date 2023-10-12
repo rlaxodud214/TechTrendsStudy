@@ -10,12 +10,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /*  명령어 학습
     1. CA + l : 자동 정렬
@@ -40,26 +44,58 @@ class MainActivity : ComponentActivity() {
             // remember를 사용하면 외부 요인으로 인해 UI가 다시 그려질 때마다 상태를 잃지 않게 해준다.
             // 또는 remember가 없는 상태에서 UI가 다시 그려지더라도 상태를 유지할 수 있게 ViewModel을 사용해도 된다.
             // val data = remember { mutableStateOf("Hello") }
-            val viewModel by viewModels<MainViewModel>()
+            val viewModel by viewModels<LikeCountViewModel>()
+            LikeCountScreen(viewModel)
 
-            Column (
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ){
-                Text(
-                    viewModel.data.value,
-                    fontSize = 30.sp
-                )
-                Button(onClick = {
-                    viewModel.changeValue("World")
-                }) {
-                    Text("변경")
-                }
-            }
         }
     }
 }
+
+@Composable
+fun LikeCountScreen(viewModel: LikeCountViewModel) {
+    val data: Int by viewModel.counter.collectAsState()
+
+    Column (
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ){
+        Text(
+            data.toString(),
+            fontSize = 30.sp
+        )
+        Button(onClick = {
+            viewModel.incrementCounter()
+        }) {
+            Text("Up")
+        }
+    }
+}
+
+class LikeCountViewModel : ViewModel() {
+    // 외부에서 직접적인 데이터 수정을 막기 위해 private으로 정의한 뒤, getter-setter 사용
+    private val _counter = MutableStateFlow(0)
+    val counter: StateFlow<Int> get() = _counter.asStateFlow() // 읽기 전용으로만 공개 (getter)
+    fun incrementCounter() { // 수정할 수 있는 기능은 메소드로 제공 (setter)
+        _counter.value++
+        // DB 업데이트 및 다른 사용자에게 알림?
+    }
+}
+
+/* [GPT 및 Google Q&A] MutableStateOf와 MutableStateFlow의 차이점은?
+    1. 목적
+       Of : UI의 상태를 선언적으로 관리하기 위함 - 일반적인 경우에 사용
+       Flow : Coroutine의 Flow를 사용하기 위함, 상태를 감시 가능한 스트림으로 관리하기 위함 - 주요 기능에 사용
+    2. 동작 방식
+       Of : 해당 상태를 참조하는 Composable 함수는 상태가 변경될 때마다 다시 실행
+       Flow : Hot Flow로, 상태가 변경될 때마다 해당 변경 사항을 구독하고 있는 모든 구독자에게 방출 => 옵저버 패턴!!
+    3. 사용 장소
+       Of : 주로 Composable 함수 내에서 상태를 정의하고 관리하는 데 사용
+       Flow : ViewModel 또는 다른 데이터 관리 클래스에서 상태를 관리하고 여러 구성 요소에 상태의 변경을 방출하는 데 사용
+    4. Thread Safety
+       Of : thread-safe 보장은 안되지만, Compose에서는 주로 메인 쓰레드에서 사용되므로 오류 확률 낮음
+       Flow : thread-safe 보장할 수 있음, 여러 쓰레드에서 동시에 접근하고 수정해도 안전하다.
+*/
 
 /*
     [GPT Q&A] ViewModel
@@ -103,12 +139,12 @@ class MainActivity : ComponentActivity() {
 */
 
 // ViewModel 클래스를 상속받아 새로운 ViewModel 생성
-class MainViewModel : ViewModel() {
-    // 외부에서 직접적인 데이터 수정을 막기 위해 private으로 정의한 뒤,
-    private val _data = mutableStateOf("Hello")
-
-    val data: State<String> = _data // 읽기 전용으로만 공개 (getter)
-    fun changeValue(value : String) { // 수정할 수 있는 기능은 메소드로 제공 (setter)
-        _data.value = value
-    }
-}
+//class MainViewModel : ViewModel() {
+//    // 외부에서 직접적인 데이터 수정을 막기 위해 private으로 정의한 뒤,
+//    private val _data = mutableStateOf("Hello")
+//
+//    val data: State<String> = _data // 읽기 전용으로만 공개 (getter)
+//    fun changeValue(value : String) { // 수정할 수 있는 기능은 메소드로 제공 (setter)
+//        _data.value = value
+//    }
+//}
