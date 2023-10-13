@@ -49,6 +49,9 @@ android {
     }
 }
 
+// Compose version을 정의합니다.
+val compose_version = "1.5.3"
+
 dependencies {
 
     implementation("androidx.core:core-ktx:1.9.0")
@@ -73,4 +76,7 @@ dependencies {
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.4.0")
+
+    // LiveData - 위에서 (val compose_version = "1.5.3")를 선언한 뒤 compose_version를 사용할 수 있음
+    implementation("androidx.compose.runtime:runtime-livedata:$compose_version")
 }
